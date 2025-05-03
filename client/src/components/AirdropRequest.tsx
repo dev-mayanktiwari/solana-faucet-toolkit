@@ -11,7 +11,7 @@ const AirdropRequest = () => {
   const { connection } = useConnection();
   const { publicKey } = useWallet();
 
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState("0.1");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{
     type: "success" | "error";
