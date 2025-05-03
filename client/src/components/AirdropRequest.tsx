@@ -11,7 +11,7 @@ const AirdropRequest = () => {
   const { connection } = useConnection();
   const { publicKey } = useWallet();
 
-  const [amount, setAmount] = useState("1");
+  const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{
     type: "success" | "error";
@@ -20,12 +20,18 @@ const AirdropRequest = () => {
 
   const requestAirdrop = async () => {
     if (!publicKey) return;
+    if (Number.parseFloat(amount) > 1) {
+      setStatus({
+        type: "error",
+        message: "Maximum airdrop amount is one sol.",
+      });
+      return;
+    }
     try {
       setLoading(true);
       setStatus(null);
 
       const lamports = Number.parseFloat(amount) * LAMPORTS_PER_SOL;
-
       const signature = await connection.requestAirdrop(publicKey, lamports);
       await connection.confirmTransaction(signature);
 
@@ -58,7 +64,7 @@ const AirdropRequest = () => {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           min={0.1}
-          max={10}
+          max={1}
           step={0.1}
         />
         <p className="text-xs text-muted-foreground">
