@@ -52,7 +52,7 @@ const App: FC = () => {
             <main className="flex min-h-screen flex-col items-center p-4 md:p-24">
               <div className="w-full max-w-3xl">
                 <h1 className="mb-8 text-center text-3xl font-bold">
-                  Solana Wallet Interface
+                  Solana Faucet Toolkit
                 </h1>
                 <WalletInterface />
               </div>
