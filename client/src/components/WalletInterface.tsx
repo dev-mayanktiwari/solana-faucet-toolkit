@@ -63,6 +63,15 @@ const WalletInterface = () => {
           </Card>
         )}
       </div>
+      <footer className="mt-8 text-center text-sm text-muted-foreground pb-4">
+        Made with ❤️ by{" "}
+        <a
+          href="https://www.mayanktiwari.tech"
+          className="text-primary hover:underline font-medium"
+        >
+          Mayank
+        </a>
+      </footer>
     </div>
   );
 };
