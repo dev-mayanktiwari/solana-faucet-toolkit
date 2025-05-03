@@ -1,5 +1,10 @@
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import {
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
 import { useState } from "react";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
@@ -9,35 +14,58 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 const SendTransaction = () => {
   const { connection } = useConnection();
-  const { publicKey } = useWallet();
-
+  const { publicKey, sendTransaction } = useWallet();
   const [amount, setAmount] = useState("1");
   const [loading, setLoading] = useState(false);
+  const [receipent, setReceipent] = useState("");
   const [status, setStatus] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
 
-  const requestAirdrop = async () => {
-    if (!publicKey) return;
+  const isValidPublickey = (address: string) => {
+    try {
+      new PublicKey(address);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleSend = async () => {
+    if (!publicKey || !isValidPublickey(receipent)) return;
     try {
       setLoading(true);
       setStatus(null);
 
       const lamports = Number.parseFloat(amount) * LAMPORTS_PER_SOL;
 
-      const signature = await connection.requestAirdrop(publicKey, lamports);
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: new PublicKey(receipent),
+          lamports,
+        })
+      );
+
+      const signature = await sendTransaction(transaction, connection);
       await connection.confirmTransaction(signature);
 
       setStatus({
         type: "success",
-        message: `Successfully airdropped ${amount} to your wallet!`,
+        message: `Successfully sent ${amount} SOL to ${receipent.slice(
+          0,
+          6
+        )}...${receipent.slice(-4)}!`,
       });
+
+      // Reset form
+      setAmount("");
     } catch (error) {
-      console.error("Error requesting airdrop:", error);
+      console.error("Error sending transaction:", error);
       setStatus({
         type: "error",
-        message: `Failed to request airdrop: ${
+        message: `Failed to send transaction: ${
           error instanceof Error ? error.message : String(error)
         }`,
       });
@@ -46,33 +74,51 @@ const SendTransaction = () => {
     }
   };
 
+  const isFormValid =
+    receipent &&
+    isValidPublickey(receipent) &&
+    amount &&
+    Number.parseFloat(amount) > 0;
+
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Request Airdrop</h2>
+      <h2 className="text-xl font-semibold">Send SOL</h2>
 
-      <div className="space-y-2">
-        <Label htmlFor="amount">Amount (SOL)</Label>
-        <Input
-          id="amount"
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          min={0.1}
-          max={10}
-          step={0.1}
-        />
-        <p className="text-xs text-muted-foreground">
-          Note: Airdrops are only available on devnet and testnet
-        </p>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="recipient">Recipient Address</Label>
+          <Input
+            id="recipient"
+            value={receipent}
+            onChange={(e) => setReceipent(e.target.value)}
+            placeholder="Enter Solana address"
+          />
+          {receipent && !isValidPublickey(receipent) && (
+            <p className="text-xs text-destructive">Invalid Solana address</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="amount">Amount (SOL)</Label>
+          <Input
+            id="amount"
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            min="0.000001"
+            step="0.000001"
+            placeholder="0.0"
+          />
+        </div>
+
+        <Button
+          onClick={handleSend}
+          disabled={loading || !publicKey || !isFormValid}
+          className="w-full"
+        >
+          {loading ? "Processing..." : "Send SOL"}
+        </Button>
       </div>
-
-      <Button
-        onClick={requestAirdrop}
-        disabled={loading || !publicKey}
-        className="w-full"
-      >
-        {loading ? "Processing..." : "Request Airdrop"}
-      </Button>
 
       {status && (
         <Alert variant={status.type === "success" ? "default" : "destructive"}>
